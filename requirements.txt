@@ -1,0 +1,7 @@
+streamlit>=1.36
+pypdf>=4.2
+chromadb>=0.5
+sentence-transformers>=3.0
+openai>=1.30
+groq>=0.9
+python-dotenv>=1.0
