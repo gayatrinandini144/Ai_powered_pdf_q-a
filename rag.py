@@ -12,7 +12,9 @@ just to index documents. Only the final answer-generation step needs an
 LLM API key (OpenAI or Groq), and the app works in "extractive" mode
 (no key needed) if you don't have one.
 """
-
+__import__("pysqlite3")
+import sys
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 import os
 import uuid
 from dataclasses import dataclass, field
