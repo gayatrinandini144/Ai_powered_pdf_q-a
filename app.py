@@ -286,13 +286,48 @@ with st.sidebar:
         selected_sources = []
         st.info("Upload and index a PDF to get started.")
 
+    # ----------------------------------------------------------------
+    # 3. LLM settings — auto-uses a key saved in Streamlit secrets
+    #    (Settings → Secrets: GROQ_API_KEY / OPENAI_API_KEY) so you
+    #    don't have to paste a key in every session. You can still
+    #    override it with a different key via the checkbox below.
+    # ----------------------------------------------------------------
     st.subheader("3. LLM settings")
-    provider = st.selectbox("Answer generation", ["none (extractive only)", "openai", "groq"])
+
+    def _saved_key(name: str) -> str:
+        try:
+            return st.secrets.get(name, "")
+        except Exception:
+            return ""
+
+    groq_saved = _saved_key("GROQ_API_KEY")
+    openai_saved = _saved_key("OPENAI_API_KEY")
+
+    # Default the dropdown to whichever provider already has a saved key
+    default_index = 2 if groq_saved else (1 if openai_saved else 0)
+    provider = st.selectbox(
+        "Answer generation",
+        ["none (extractive only)", "openai", "groq"],
+        index=default_index,
+    )
     provider_key = "none" if provider.startswith("none") else provider
     api_key = ""
     model_name = ""
+
     if provider_key != "none":
-        api_key = st.text_input(f"{provider_key.upper()} API key", type="password")
+        saved_key = groq_saved if provider_key == "groq" else openai_saved
+
+        if saved_key:
+            st.success(f"Using the saved {provider_key.upper()} key — nothing to paste.")
+            override = st.checkbox("Use a different key instead")
+            if override:
+                api_key = st.text_input(f"{provider_key.upper()} API key", type="password")
+            else:
+                api_key = saved_key
+        else:
+            api_key = st.text_input(f"{provider_key.upper()} API key", type="password")
+            st.caption("Key is used only for this session and never saved to disk.")
+
         default_model = "gpt-4o-mini" if provider_key == "openai" else "openai/gpt-oss-20b"
         model_name = st.text_input("Model", value=default_model)
         if provider_key == "groq":
@@ -301,7 +336,6 @@ with st.sidebar:
                 "'model not found' error, check the current list at "
                 "console.groq.com/docs/models and paste a valid model id above."
             )
-        st.caption("Key is used only for this session and never saved to disk.")
 
     top_k = st.slider("Chunks to retrieve (k)", min_value=1, max_value=8, value=3)
 
